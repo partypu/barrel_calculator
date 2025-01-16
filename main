@@ -1,0 +1,176 @@
+"""
+Barrel Calculator
+Author: Sandor Mark Lazar-Toth
+Date: 2025-01-06
+All rights reserved © Sandor Mark Lazar-Toth
+"""
+
+import tkinter as tk
+from tkinter import messagebox
+from datetime import datetime
+import math
+import requests
+
+# Materialegenskaper og kruttdata
+MATERIALS = {
+    "steel": {"density": 7.85, "yield_strength": 3000},
+    "aluminum": {"density": 2.70, "yield_strength": 450},
+    "titanium": {"density": 4.50, "yield_strength": 950}
+}
+
+POWDERS = {
+    "fast": {"energy_density": 3.0, "burn_rate": 1.2},
+    "medium": {"energy_density": 3.5, "burn_rate": 1.0},
+    "slow": {"energy_density": 4.0, "burn_rate": 0.8}
+}
+
+def show_main_program():
+    def calculate_muzzle_velocity(caliber, barrel_length, powder_mass, powder_type, bullet_mass):
+        powder = POWDERS[powder_type]
+        energy_per_kg = powder["energy_density"]
+        burn_rate = powder["burn_rate"]
+        available_energy = powder_mass * energy_per_kg
+        available_energy_joules = available_energy * 1e6
+        efficiency = min(0.4 + 0.001 * barrel_length, 0.6)
+        effective_energy = available_energy_joules * efficiency
+        muzzle_velocity = math.sqrt(2 * effective_energy / bullet_mass)
+        return muzzle_velocity
+
+    def calculate_results():
+        try:
+            caliber = float(caliber_entry.get())
+            barrel_length = float(barrel_length_entry.get())
+            chamber_pressure = float(chamber_pressure_entry.get()) * 100
+            material = material_var.get()
+            powder_type = powder_var.get()
+            powder_mass = float(powder_mass_entry.get()) / 1000
+            bullet_mass = float(bullet_mass_entry.get()) / 1000
+            lands_grooves = 6 if caliber <= 0.315 else 4
+            twist_rate = 200 if caliber <= 0.315 else 300
+            land_diameter = caliber * 0.98
+            groove_diameter = caliber
+            muzzle_velocity = calculate_muzzle_velocity(caliber, barrel_length, powder_mass, powder_type, bullet_mass)
+            results = (
+                f"Results:\n"
+                f"Caliber: {caliber:.2f} inches\n"
+                f"Barrel Length: {barrel_length:.2f} mm\n"
+                f"Material: {material.capitalize()}\n"
+                f"Powder Type: {powder_type.capitalize()}\n"
+                f"Powder Mass: {powder_mass * 1000:.2f} grams\n"
+                f"Bullet Mass: {bullet_mass * 1000:.2f} grams\n"
+                f"Muzzle Velocity: {muzzle_velocity:.2f} m/s\n"
+                f"\nRifling Parameters:\n"
+                f"Number of Lands and Grooves: {lands_grooves}\n"
+                f"Twist Rate: {twist_rate} mm\n"
+                f"Land Diameter: {land_diameter:.4f} inches\n"
+                f"Groove Diameter: {groove_diameter:.4f} inches\n"
+            )
+            output_text.insert(tk.END, results + "\n")
+            with open("barrel_calculator_log.txt", "a") as log_file:
+                log_file.write(f"{datetime.now()} - \n{results}\n")
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid numerical values for all inputs.")
+
+    root = tk.Tk()
+    root.title("Barrel Calculator")
+
+    tk.Label(root, text="Caliber (inches):").grid(row=0, column=0, sticky="w")
+    caliber_entry = tk.Entry(root)
+    caliber_entry.grid(row=0, column=1)
+
+    tk.Label(root, text="Barrel Length (mm):").grid(row=1, column=0, sticky="w")
+    barrel_length_entry = tk.Entry(root)
+    barrel_length_entry.grid(row=1, column=1)
+
+    tk.Label(root, text="Chamber Pressure (bar):").grid(row=2, column=0, sticky="w")
+    chamber_pressure_entry = tk.Entry(root)
+    chamber_pressure_entry.grid(row=2, column=1)
+
+    tk.Label(root, text="Material:").grid(row=3, column=0, sticky="w")
+    material_var = tk.StringVar(value="steel")
+    material_menu = tk.OptionMenu(root, material_var, *MATERIALS.keys())
+    material_menu.grid(row=3, column=1)
+
+    tk.Label(root, text="Powder Type:").grid(row=4, column=0, sticky="w")
+    powder_var = tk.StringVar(value="medium")
+    powder_menu = tk.OptionMenu(root, powder_var, *POWDERS.keys())
+    powder_menu.grid(row=4, column=1)
+
+    tk.Label(root, text="Powder Mass (grams):").grid(row=5, column=0, sticky="w")
+    powder_mass_entry = tk.Entry(root)
+    powder_mass_entry.grid(row=5, column=1)
+
+    tk.Label(root, text="Bullet Mass (grams):").grid(row=6, column=0, sticky="w")
+    bullet_mass_entry = tk.Entry(root)
+    bullet_mass_entry.grid(row=6, column=1)
+
+    output_text = tk.Text(root, height=15, width=50)
+    output_text.grid(row=7, column=0, columnspan=2, pady=10)
+
+    calculate_button = tk.Button(root, text="Calculate", command=calculate_results)
+    calculate_button.grid(row=8, column=0, columnspan=2)
+
+    root.mainloop()
+
+def start_eula():
+    eula_window = tk.Tk()
+    eula_window.title("End User License Agreement")
+    tk.Label(eula_window, text="End User License Agreement", font=("Helvetica", 16)).pack(pady=10)
+    eula_text = tk.Text(eula_window, wrap="word", height=15, width=50)
+    eula_text.insert("1.0", '''EULA: END USER LICENSE AGREEMENT (EULA)
+Last Updated: 2025-01-06
+Author: Sandor Mark Lazar-Toth
+ACCEPTANCE OF TERMS
+By installing, accessing, or using this software Software, you agree to be bound by the terms of this End User License Agreement EULA. If you do not agree to the terms of this EULA, you may not use the Software.
+GRANT OF LICENSE
+This Software is licensed, not sold. The author grants you a personal, non-exclusive, non-transferable, and revocable license to use this Software for personal or educational purposes only. Commercial use is strictly prohibited unless explicitly authorized by the author.
+LIMITATIONS OF USE
+You agree that you will NOT:
+Decompile, reverse-engineer, disassemble, or modify the Software.
+Distribute, rent, lease, sublicense, or transfer the Software to any third party.
+Use the Software for any unlawful, unethical, or harmful purposes.
+NO WARRANTY
+THIS SOFTWARE IS PROVIDED AS IS WITHOUT ANY WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. THE AUTHOR DOES NOT GUARANTEE THAT THE SOFTWARE WILL BE ERROR-FREE OR THAT IT WILL MEET YOUR REQUIREMENTS.
+LIMITATION OF LIABILITY
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE AUTHOR SHALL NOT BE HELD LIABLE FOR ANY DAMAGES WHATSOEVER ARISING OUT OF OR IN CONNECTION WITH THE USE OR INABILITY TO USE THIS SOFTWARE, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES, EVEN IF THE AUTHOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+This includes, but is not limited to:
+Data loss.
+Hardware damage.
+Financial losses.
+Injuries or accidents resulting from improper use of this Software.
+USER RESPONSIBILITY
+By using this Software, you acknowledge that:
+You are solely responsible for ensuring the Software is used safely and appropriately.
+You have adequate technical knowledge to interpret and verify the results produced by the Software.
+You will not rely solely on this Software for critical calculations or decisions.
+INTELLECTUAL PROPERTY
+This Software and its source code are the intellectual property of Sandor Mark Lazar-Toth. All rights are reserved. Unauthorized use, copying, or redistribution of the Software, in whole or in part, is strictly prohibited.
+TERMINATION
+This license is effective until terminated. Your rights under this EULA will terminate automatically without notice if you fail to comply with any term of this EULA. Upon termination, you must cease all use of the Software and destroy any copies in your possession.
+GOVERNING LAW
+This EULA shall be governed by and construed in accordance with the laws of [Insert Country/Region]. Any disputes arising out of or relating to this EULA shall be resolved in the courts of [Insert Country/Region].
+DISCLAIMER FOR PHYSICAL APPLICATIONS
+If this Software is used to design, analyze, or calculate physical objects (e.g., rifle barrels, engineering components), you acknowledge that:
+The results are for informational purposes only and should not be considered accurate or final without professional verification.
+The author assumes no responsibility for any accidents, malfunctions, or failures arising from the application of these results in real-world scenarios.
+MODIFICATIONS TO THE EULA
+The author reserves the right to modify this EULA at any time. Continued use of the Software after such modifications constitutes acceptance of the updated terms.
+ACKNOWLEDGEMENT
+By using this Software, you acknowledge that you have read and understood this EULA and agree to be bound by its terms.\n\nYou must accept the terms to use it.''')
+    eula_text.config(state="disabled")
+    eula_text.pack(pady=10)
+
+    def accept():
+        eula_window.destroy()
+        show_main_program()
+
+    def decline():
+        eula_window.destroy()
+        messagebox.showinfo("EULA Declined", "You must accept the EULA to use the software.")
+
+    tk.Button(eula_window, text="Accept", command=accept).pack(side="left", padx=20, pady=10)
+    tk.Button(eula_window, text="Decline", command=decline).pack(side="right", padx=20, pady=10)
+
+    eula_window.mainloop()
+
+start_eula()
